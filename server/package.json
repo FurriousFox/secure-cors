@@ -1,0 +1,12 @@
+{
+  "name": "secure-cors-server",
+  "version": "1.0.0",
+  "description": "CORS server keeping SSL encryption intact",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "nodemon"
+  },
+  "author": "FurriousFox",
+  "license": "ISC"
+}
