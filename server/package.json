@@ -8,5 +8,11 @@
     "test": "nodemon"
   },
   "author": "FurriousFox",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^8.17.1"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.8"
+  }
 }

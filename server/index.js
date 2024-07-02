@@ -1,6 +1,7 @@
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const { WebSocketServer } = require('ws');
 
 let argsa = process.argv.slice(2);
 let args = [
@@ -81,9 +82,16 @@ else {
         server = https.createServer(options);
     }
 
-    server.on('request', (req, res) => {
-        res.writeHead(200);
-        res.end('hello world\n');
+    wss = new WebSocketServer({ server: server });
+
+    wss.on('connection', function connection(ws) {
+        ws.on('error', console.error);
+
+        ws.on('message', function message(data) {
+            console.log('received: %s', data);
+        });
+
+        ws.send('something');
     });
 
     server.listen(config.port, () => {
