@@ -82,7 +82,7 @@ async function awaitDataOrClosure(connid) {
     });
 }
 
-const fetch = async function (gurl, options) {
+const fetch2 = async function (gurl, options) {
     let url = new URL(gurl);
 
     // optional: DoH, todo
@@ -127,7 +127,9 @@ const fetch = async function (gurl, options) {
         }
     })();
 
-    const [uread, uwrite] = await subtls.startTls(url.pathname, { index: certs.certindex, certs: certs.certs }, async function (bytes) {
+    console.log({ index: certs.certindex, data: new Uint8Array(certs.certs) });
+
+    const [uread, uwrite] = await subtls.startTls(url.hostname, { index: certs.certindex, data: certs.certs }, async function (bytes) {
         let a = false;
         while (!closed) {
             if (a) await new Promise(r => setTimeout(r, 10)); // jshint ignore:line
@@ -153,40 +155,40 @@ const fetch = async function (gurl, options) {
         return;
     });
 
-    (async () => {
-        while (!closed) {
-            let data = await uread();
-            if (data === undefined) {
-                closed = true;
-                break;
-            } else {
-                responsebuffer = new Uint8Array([...responsebuffer, ...data]);
-            }
-        }
-        responsepromiser(responsebuffer);
-    })();
-
-    let write = function (input) {
-        if (typeof input === "string") {
-            uwrite(Uint8Array.from(input, c => c.charCodeAt(0)));
-        } else if (input instanceof Uint8Array) {
-            uwrite(input);
-        }
-    };
-
-    write(rawHttpReq);
-
-    await responsepromise;
-    console.log("received response", responsebuffer, "\n", String.fromCharCode.apply(null, responsebuffer));
-
-
-    // let response = await sendWs({
-    //     action: "data",
-    //     data: {
-    //         id: conn.id,
-    //         data: forge.http.createRequest({ method: 'GET', path: url.pathname }).toString(),
+    // (async () => {
+    //     while (!closed) {
+    //         let data = await uread();
+    //         if (data === undefined) {
+    //             closed = true;
+    //             break;
+    //         } else {
+    //             responsebuffer = new Uint8Array([...responsebuffer, ...data]);
+    //         }
     //     }
-    // });
+    //     responsepromiser(responsebuffer);
+    // })();
+
+    // let write = function (input) {
+    //     if (typeof input === "string") {
+    //         uwrite(Uint8Array.from(input, c => c.charCodeAt(0)));
+    //     } else if (input instanceof Uint8Array) {
+    //         uwrite(input);
+    //     }
+    // };
+
+    // // write(rawHttpReq);
+
+    // await responsepromise;
+    // console.log("received response", responsebuffer, "\n", String.fromCharCode.apply(null, responsebuffer));
+
+
+    // // let response = await sendWs({
+    // //     action: "data",
+    // //     data: {
+    // //         id: conn.id,
+    // //         data: forge.http.createRequest({ method: 'GET', path: url.pathname }).toString(),
+    // //     }
+    // // });
 };
 
-window.fetch = fetch;
+window.fetch2 = fetch2;

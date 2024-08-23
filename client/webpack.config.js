@@ -12,4 +12,6 @@ module.exports = {
 
     // Mode configuration - can be 'development', 'production', or 'none'
     mode: 'development',  // 'production' optimizes the bundle; 'development' makes it easier to debug
+
+    devtool: 'inline-source-map',
 };
