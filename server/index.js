@@ -1,3 +1,7 @@
+// prevent process from exiting on uncaught exceptions
+process.on('uncaughtException', function (err) { });
+process.on('unhandledRejection', function (err) { });
+
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
@@ -127,7 +131,7 @@ else {
                             ws.send(JSON.stringify({ data: { id: connectionId, action: "connect" }, id: data.id }));
                         });
                         connection.on('data', (data) => {
-                            ws.send(JSON.stringify({ data: { id: connectionId, action: "data", data: data }, id: messagecounter-- }));
+                            ws.send(JSON.stringify({ data: { id: connectionId, action: "data", data: data.toString("binary") }, id: messagecounter-- }));
                         });
                         connection.on('close', () => {
                             ws.send(JSON.stringify({ data: { id: connectionId, action: "close" }, id: messagecounter-- }));
