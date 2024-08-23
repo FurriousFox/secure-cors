@@ -7,7 +7,7 @@ const net = require('net');
 let argsa = process.argv.slice(2);
 let args = [
     { name: "insecure", flag: "-i, --insecure", description: "start server without SSL (useful when using a reverse proxy)", flags: ["-i", "--insecure"], parameters: 0 },
-    { name: "port", flag: "-p, --port <port>", description: "port to listen on", flags: ["-p", "--port"], parameters: 1 },
+    { name: "port", flag: "-p, --port <port>", description: "port to listen on (11711 by default)", flags: ["-p", "--port"], parameters: 1 },
     { name: "key", flag: "-k, --key <key>", description: "path to private SSL key", flags: ["-k", "--key"], parameters: 1 },
     { name: "cert", flag: "-c, --cert <cert>", description: "path to SSL certificate", flags: ["-c", "--cert"], parameters: 1 },
     { name: "ca", flag: "--ca <ca>", description: "path to SSL certificate authority (usually not needed)", flags: ["--ca"], parameters: 1 },
@@ -27,7 +27,7 @@ function help() {
 if (argsa.length < 1 || argsa.includes("--help") || argsa.includes("-h")) help();
 else {
     let config = {
-        port: undefined,
+        port: 11711,
         key: undefined,
         cert: undefined,
         ca: undefined,
@@ -86,7 +86,8 @@ else {
     wss = new WebSocketServer({ server: server });
 
     wss.on('connection', function connection(ws) {
-        let connections = []; // maybe make a global connection list, and make some sort of identification so that a client can reconnect to the websocket and still access the same connections
+        let messagecounter = -1; // unsolicited server messages count negatively, client messages count positively, responses to client messages will match the client message id
+        let connections = [];
 
         ws.on('error', console.error);
 
@@ -96,34 +97,54 @@ else {
             // {
             //     "action": "connect" || "close" || "data",
             //     "data": {
-            //         "connection": if action == "connect": hostname or ip (string) || if (action == "close" || action == "data"): connection id (number),
+            //         "destination": (if action == "connect") hostname:port or ip:port (string),
             //         "data": string || buffer (if action == "data")
-            //     }
+            //         "id": int || undefined, (corresponding connection id (if action != "connect"))
+            //     },
+            //     "id": int (message id)
             // }
 
             // response format (JSON):
             // {
             //     "error": string || undefined,
-            //     "id": int || undefined, (corresponding connection id)
             //     "data": {
             //         "data": string || buffer || undefined,
             //         "action": "connect" || "close" || "data" || undefined,
-            //     }
+            //         "id": int || undefined, (corresponding connection id)
+            //     },
+            //     "id": int (message id)
             // }
 
+
+            // i kinda really need input validation here, else it's probably insecure as heck
             try {
                 data = JSON.parse(data);
 
-                switch (data.action) {
+                switch (data.action) { // connect, close, data
                     case "connect":
                         let connectionId = connections.length;
-                        let connection = connections[connectionId] = net.connect(data.data.connection, () => {
-                            ws.send(JSON.stringify({ data: connectionId }));
+                        let connection = connections[connectionId] = net.connect(data.data.destination.split(":")[1], data.data.destination.split(":")[0], () => {
+                            ws.send(JSON.stringify({ data: { id: connectionId, action: "connect" }, id: data.id }));
                         });
+                        connection.on('data', (data) => {
+                            ws.send(JSON.stringify({ data: { id: connectionId, action: "data", data: data }, id: messagecounter-- }));
+                        });
+                        connection.on('close', () => {
+                            ws.send(JSON.stringify({ data: { id: connectionId, action: "close" }, id: messagecounter-- }));
+                        });
+                        break;
+                    case "close":
+                        connections[data.data.id].end();
+                        ws.send(JSON.stringify({ data: { id: data.data.id, action: "close" }, id: data.id }));
+                        break;
+                    case "data":
+                        connections[data.data.id].write(data.data.data);
+                        ws.send(JSON.stringify({ data: { id: data.data.id, action: "data" }, id: data.id }));
                         break;
                 }
             } catch (e) {
-                ws.send(JSON.stringify({ error: "Invalid JSON" }));
+                ws.send(JSON.stringify({ error: "Failed to process request", id: data.id }));
+                console.log(e);
                 return;
             }
 
