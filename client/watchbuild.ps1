@@ -1,0 +1,1 @@
+while ($true) { inotifywait .\index.js && npm run build }

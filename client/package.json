@@ -10,6 +10,6 @@
   "author": "FurriousFox",
   "license": "ISC",
   "dependencies": {
-    "node-fetch": "^2.7.0"
+    "node-tls": "^0.10.2"
   }
 }

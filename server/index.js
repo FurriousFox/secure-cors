@@ -2,6 +2,7 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const { WebSocketServer } = require('ws');
+const net = require('net');
 
 let argsa = process.argv.slice(2);
 let args = [
@@ -85,13 +86,49 @@ else {
     wss = new WebSocketServer({ server: server });
 
     wss.on('connection', function connection(ws) {
+        let connections = []; // maybe make a global connection list, and make some sort of identification so that a client can reconnect to the websocket and still access the same connections
+
         ws.on('error', console.error);
 
-        ws.on('message', function message(data) {
-            console.log('received: %s', data);
-        });
+        ws.on('message', async function message(data) {
 
-        ws.send('something');
+            // message format (JSON):
+            // {
+            //     "action": "connect" || "close" || "data",
+            //     "data": {
+            //         "connection": if action == "connect": hostname or ip (string) || if (action == "close" || action == "data"): connection id (number),
+            //         "data": string || buffer (if action == "data")
+            //     }
+            // }
+
+            // response format (JSON):
+            // {
+            //     "error": string || undefined,
+            //     "id": int || undefined, (corresponding connection id)
+            //     "data": {
+            //         "data": string || buffer || undefined,
+            //         "action": "connect" || "close" || "data" || undefined,
+            //     }
+            // }
+
+            try {
+                data = JSON.parse(data);
+
+                switch (data.action) {
+                    case "connect":
+                        let connectionId = connections.length;
+                        let connection = connections[connectionId] = net.connect(data.data.connection, () => {
+                            ws.send(JSON.stringify({ data: connectionId }));
+                        });
+                        break;
+                }
+            } catch (e) {
+                ws.send(JSON.stringify({ error: "Invalid JSON" }));
+                return;
+            }
+
+
+        });
     });
 
     server.listen(config.port, () => {
