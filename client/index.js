@@ -101,13 +101,12 @@ const fetch = async function (gurl, options) {
 
     console.log(forge.http.createRequest({ method: 'GET', path: url.pathname }).toString());
 
-    let ddd;
-
     let closed = false;
     let responsebuffer = new Uint8Array(0);
     let responsepromiser;
     let responsepromise = new Promise((resolve, reject) => { responsepromiser = resolve; });
 
+    let dataness = new Uint8Array(0);
     (async () => {
         while (true) {
             let data = await awaitDataOrClosure(conn.id);
@@ -116,10 +115,7 @@ const fetch = async function (gurl, options) {
             switch (data.action) {
                 case "data":
                     // console.log(data.data);
-
-                    if (ddd != undefined) ddd(Uint8Array.from(atob(data.data), c => c.charCodeAt(0)));
-                    else console.error("uhh, no ddd");
-                    setTimeout(ddd, 100);
+                    dataness = new Uint8Array([...dataness, ...Uint8Array.from(atob(data.data), c => c.charCodeAt(0))]);
                     break;
                 case "close":
                     console.log('[socket] disconnected');
@@ -132,10 +128,18 @@ const fetch = async function (gurl, options) {
     })();
 
     const [uread, uwrite] = await subtls.startTls(url.pathname, { index: certs.certindex, certs: certs.certs }, async function (bytes) {
-        let aaa = new Promise((resolve, reject) => {
-            ddd = resolve;
-        });
-        return await aaa;
+        let a = false;
+        while (!closed) {
+            if (a) await new Promise(r => setTimeout(r, 10)); // jshint ignore:line
+            a = true;
+
+            if (dataness.length >= bytes) {
+                let data = dataness.slice(0, bytes);
+                dataness = dataness.slice(bytes);
+                return data;
+            }
+        }
+        return undefined;
     }, async function (bytes) {
         // write
         let response = await sendWs({
