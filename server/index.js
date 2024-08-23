@@ -131,7 +131,7 @@ else {
                             ws.send(JSON.stringify({ data: { id: connectionId, action: "connect" }, id: data.id }));
                         });
                         connection.on('data', (data) => {
-                            ws.send(JSON.stringify({ data: { id: connectionId, action: "data", data: data.toString("binary") }, id: messagecounter-- }));
+                            ws.send(JSON.stringify({ data: { id: connectionId, action: "data", data: data.toString("base64") }, id: messagecounter-- }));
                         });
                         connection.on('close', () => {
                             ws.send(JSON.stringify({ data: { id: connectionId, action: "close" }, id: messagecounter-- }));
@@ -142,7 +142,7 @@ else {
                         ws.send(JSON.stringify({ data: { id: data.data.id, action: "close" }, id: data.id }));
                         break;
                     case "data":
-                        connections[data.data.id].write(data.data.data);
+                        connections[data.data.id].write(new Buffer.from(data.data.data, "base64"));
                         ws.send(JSON.stringify({ data: { id: data.data.id, action: "data" }, id: data.id }));
                         break;
                 }

@@ -5,12 +5,16 @@
   "main": "index.js",
   "scripts": {
     "test": "nodemon",
-    "build": "browserify index.js > browser.js"
+    "build": "webpack"
   },
   "author": "FurriousFox",
   "license": "ISC",
   "dependencies": {
     "node-tls": "^0.10.2",
-    "subtls": "^0.3.1"
+    "subtls": "^0.3.1",
+    "webpack": "^5.94.0"
+  },
+  "devDependencies": {
+    "webpack-cli": "^5.1.4"
   }
 }
