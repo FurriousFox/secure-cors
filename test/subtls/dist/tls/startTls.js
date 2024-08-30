@@ -14,7 +14,7 @@ import { log } from '../presentation/log.js';
 import { TrustedCert } from './cert.js';
 import { base64Decode, urlCharCodes } from '../util/base64.js';
 import cs from '../util/cryptoProxy.js';
-export async function startTls(host, rootCertsDatabase, networkRead, networkWrite, { useSNI, requireServerTlsExtKeyUsage, requireDigitalSigKeyUsage, writePreData, expectPreData, commentPreData } = {}) {
+export async function startTls(host, rootCertsDatabase, networkRead, networkWrite, closed, { useSNI, requireServerTlsExtKeyUsage, requireDigitalSigKeyUsage, writePreData, expectPreData, commentPreData } = {}) {
     useSNI ??= true;
     requireServerTlsExtKeyUsage ??= true;
     requireDigitalSigKeyUsage ??= true;
@@ -77,7 +77,7 @@ export async function startTls(host, rootCertsDatabase, networkRead, networkWrit
     const handshakeEncrypter = new Crypter('encrypt', clientHandshakeKey, handshakeKeys.clientHandshakeIV);
     chatty && log('The server continues by sending one or more encrypted records containing the rest of its handshake messages. These include the ‘certificate verify’ message, which we check on the spot, and the full certificate chain, which we verify a bit later on:');
     const readHandshakeRecord = async () => {
-        const tlsRecord = await readEncryptedTlsRecord(networkRead, handshakeDecrypter, RecordType.Handshake);
+        const tlsRecord = await readEncryptedTlsRecord(closed, networkRead, handshakeDecrypter, RecordType.Handshake);
         if (tlsRecord === undefined)
             throw new Error('Premature end of encrypted server handshake');
         return tlsRecord;
@@ -150,7 +150,7 @@ export async function startTls(host, rootCertsDatabase, networkRead, networkWrit
             networkWrite(finishedRecords);
             wroteFinishedRecords = true;
         }
-        return readEncryptedTlsRecord(networkRead, applicationDecrypter);
+        return readEncryptedTlsRecord(closed, networkRead, applicationDecrypter);
     };
     const write = async (data) => {
         const localWroteFinishedRecords = wroteFinishedRecords;

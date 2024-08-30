@@ -44,7 +44,7 @@ export async function postgres(urlStr: string, transportFactory: typeof wsTransp
   byte.expectUint8(0x53, '"S" = SSL connection supported');
   chatty && log(...highlightBytes(byte.commentedString(), LogColours.server));
 
-  const [read, write] = await startTls(host, isrgrootx1, transport.read, transport.write, {
+  const [read, write] = await startTls(host, isrgrootx1, transport.read, transport.write, { c: false }, {
     useSNI: !neonPasswordPipelining,
     requireServerTlsExtKeyUsage: false,
     requireDigitalSigKeyUsage: false,

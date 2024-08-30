@@ -502,6 +502,8 @@ export class Cert {
 
   subjectAltNameMatchingHost(host: string) {
     const twoDotRegex = /[.][^.]+[.][^.]+$/;
+
+    // console.log(this.subjectAltNames);
     return (this.subjectAltNames ?? []).find(cert => {
       let certName = cert;
       let hostName = host;

@@ -20,6 +20,7 @@ export async function startTls(
   rootCertsDatabase: RootCertsDatabase | string,
   networkRead: (bytes: number) => Promise<Uint8Array | undefined>,
   networkWrite: (data: Uint8Array) => void,
+  closed: { c: boolean; },
   { useSNI, requireServerTlsExtKeyUsage, requireDigitalSigKeyUsage, writePreData, expectPreData, commentPreData }: {
     useSNI?: boolean,
     requireServerTlsExtKeyUsage?: boolean,
@@ -100,7 +101,7 @@ export async function startTls(
 
   chatty && log('The server continues by sending one or more encrypted records containing the rest of its handshake messages. These include the ‘certificate verify’ message, which we check on the spot, and the full certificate chain, which we verify a bit later on:');
   const readHandshakeRecord = async () => {
-    const tlsRecord = await readEncryptedTlsRecord(networkRead, handshakeDecrypter, RecordType.Handshake);
+    const tlsRecord = await readEncryptedTlsRecord(closed, networkRead, handshakeDecrypter, RecordType.Handshake);
     if (tlsRecord === undefined) throw new Error('Premature end of encrypted server handshake');
     return tlsRecord;
   };
@@ -193,7 +194,7 @@ export async function startTls(
       networkWrite(finishedRecords);
       wroteFinishedRecords = true;
     }
-    return readEncryptedTlsRecord(networkRead, applicationDecrypter);
+    return readEncryptedTlsRecord(closed, networkRead, applicationDecrypter);
   };
 
   const write = async (data: Uint8Array) => {

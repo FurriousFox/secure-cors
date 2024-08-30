@@ -31,7 +31,7 @@ export async function https(urlStr, method, transportFactory) {
         chatty && log('Connection closed (this message may appear out of order, before the last data has been decrypted and logged)');
     });
     const rootCertsDatabase = await getRootCertsDatabase();
-    const [read, write] = await startTls(host, rootCertsDatabase, transport.read, transport.write);
+    const [read, write] = await startTls(host, rootCertsDatabase, transport.read, transport.write, { c: false });
     chatty && log('Here’s a GET request:');
     const request = new Bytes(1024);
     request.writeUTF8String(`${method} ${reqPath} HTTP/1.1\r\nHost: ${host}\r\nConnection: close\r\n\r\n`);

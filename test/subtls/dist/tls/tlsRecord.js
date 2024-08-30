@@ -42,11 +42,14 @@ export async function readTlsRecord(read, expectedType, maxLength = maxPlaintext
     if (length > maxLength)
         throw new Error(`Record too long: ${length} bytes`);
     const content = await read(length);
-    if (content === undefined || content.length < length)
-        throw new Error('TLS record content truncated');
+    if (content === undefined || content.length < length) {
+        // throw new Error('TLS record content truncated');
+        console.log(Error('TLS record content truncated'));
+        return undefined;
+    }
     return { headerData, header, type, length, content };
 }
-export async function readEncryptedTlsRecord(read, decrypter, expectedType) {
+export async function readEncryptedTlsRecord(closed, read, decrypter, expectedType) {
     const encryptedRecord = await readTlsRecord(read, RecordType.Application, maxCiphertextRecordLength);
     if (encryptedRecord === undefined)
         return;
@@ -68,13 +71,16 @@ export async function readEncryptedTlsRecord(read, decrypter, expectedType) {
     if (type === RecordType.Alert) {
         const closeNotify = record.length === 2 && record[0] === 0x01 && record[1] === 0x00;
         chatty && log(`%cTLS 0x15 alert record: ${hexFromU8(record, ' ')}` + (closeNotify ? ' (close notify)' : ''), `color: ${LogColours.header}`);
+        if (closeNotify) {
+            closed.c = true;
+        }
         if (closeNotify)
             return undefined; // 0x00 is close_notify
     }
     chatty && log(`... decrypted payload (see below) ... %s%c  %s`, type.toString(16).padStart(2, '0'), `color: ${LogColours.server}`, `actual decrypted record type: ${RecordTypeName[type]}`);
     if (type === RecordType.Handshake && record[0] === 0x04) { // new session ticket message: always ignore these
         parseSessionTicket(record);
-        return readEncryptedTlsRecord(read, decrypter, expectedType);
+        return readEncryptedTlsRecord(closed, read, decrypter, expectedType);
     }
     if (expectedType !== undefined && type !== expectedType)
         throw new Error(`Unexpected TLS record type 0x${type.toString(16).padStart(2, '0')} (expected 0x${expectedType.toString(16).padStart(2, '0')})`);
