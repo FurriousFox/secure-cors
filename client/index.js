@@ -20,12 +20,13 @@ forge.options.usePureJavaScript = true;
 let messagecounter = 1;
 
 
-const config = {
-    host: 'localhost',
+let conf = {
+    host: '127.0.0.1',
     port: 11711,
     secure: false,
-    doh: true, // dns over https
+    doh: false,
 };
+
 
 let search = [];
 
@@ -33,8 +34,10 @@ let wsa = false;
 let wsac = false;
 let wsas = [];
 let ws;
+
 function connect(config) {
     ws = new WebSocket(`ws${config.secure ? 's' : ''}://${config.host ?? "localhost"}:${config.port ?? 11711}`);
+
     wsac = true;
     ws.onopen = function () {
         wsa = true;
@@ -61,15 +64,40 @@ function connect(config) {
             }
         }
     };
-    ws.onclose = function () {
+    ws.onclose = function (event) {
         wsa = false;
         ws = undefined;
+
+        console.log('ws connection closed', event);
     };
+}
+function config(config) {
+    if (config.port != conf.port || config.host != conf.host || config.secure != conf.secure) {
+        Object.assign(conf, config);
+
+        // restart connection if endpoint changes
+        if (ws || wsac) {
+            try {
+                ws.onclose = () => { };
+                ws?.close();
+            } catch (e) { }
+
+            search.splice(0, search.length);
+
+            wsa = false;
+            wsac = false;
+            ws = undefined;
+
+            connect(conf);
+        }
+    } else {
+        Object.assign(conf, config);
+    }
 }
 
 async function sendWs(payload) {
     if (!wsa) {
-        if (!wsac) connect(config);
+        if (!wsac) connect(conf);
         await new Promise(r => wsas.push(r));
     }
 
@@ -95,7 +123,7 @@ const fetch = async function (gurl, options) {
     let url = new URL(gurl);
     let resolvedip;
 
-    if (!url.hostname.match(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/g) && config.doh) {
+    if (!url.hostname.match(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/g) && conf.doh) {
         try {
             let aresolvedip = ((await (await origfetch(`https://cloudflare-dns.com/dns-query?name=${url.hostname}&type=A`, {
                 method: "GET",
@@ -230,3 +258,4 @@ const fetch = async function (gurl, options) {
 };
 
 window.fetch = fetch;
+fetch.config = config;
