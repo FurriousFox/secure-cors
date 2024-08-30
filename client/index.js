@@ -183,7 +183,15 @@ const fetch2 = async function (gurl, options) {
                 responsebuffer = new Uint8Array([...responsebuffer, ...data]);
             }
         }
-        // close the connection server-side!!
+
+        if (!sdconn) {
+            await sendWs({
+                action: "close",
+                data: {
+                    id: conn.id,
+                }
+            });
+        }
 
         responsepromiser(responsebuffer);
     })();
@@ -200,15 +208,6 @@ const fetch2 = async function (gurl, options) {
 
     await responsepromise;
     console.log("received response", responsebuffer, "\n", String.fromCharCode.apply(null, responsebuffer));
-
-
-    // let response = await sendWs({
-    //     action: "data",
-    //     data: {
-    //         id: conn.id,
-    //         data: forge.http.createRequest({ method: 'GET', path: url.pathname }).toString(),
-    //     }
-    // });
 };
 
 window.fetch2 = fetch2;
