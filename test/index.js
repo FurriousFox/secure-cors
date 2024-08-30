@@ -1,5 +1,5 @@
 let httppayload = `GET / HTTP/1.1
-Host: google.com
+Host: example.com
 User-Agent: forge.http 1.0
 Accept: */*
 Connection: keep-alive
@@ -20,7 +20,7 @@ certs.certs = new Uint8Array(fs.readFileSync('./certs.bin'));
     subtls = await subtls;
 
     let conn = await new Promise((resolve) => {
-        let aa = net.connect(443, 'google.com', async () => {
+        let aa = net.connect(443, 'example.com', async () => {
             resolve(aa);
         });
     });
@@ -30,7 +30,7 @@ certs.certs = new Uint8Array(fs.readFileSync('./certs.bin'));
         conndata = new Uint8Array([...conndata, ...data]);
     });
 
-    let url = new URL('https://google.com');
+    let url = new URL('https://example.com');
 
     let closed = { c: false };
     let responsebuffer = new Uint8Array(0);
@@ -60,7 +60,7 @@ certs.certs = new Uint8Array(fs.readFileSync('./certs.bin'));
 
                 return data;
             } else {
-                if (new Date() - ddd > 250 && bytes == 5) {
+                if ((new Date() - ddd > 250 || responsebuffer.length > 0) && bytes == 5) {
                     return undefined;
                 }
             }
@@ -85,6 +85,7 @@ certs.certs = new Uint8Array(fs.readFileSync('./certs.bin'));
                 responsebuffer = new Uint8Array([...responsebuffer, ...data]);
             }
         }
+        conn.destroy();
         responsepromiser(responsebuffer);
     })();
 
