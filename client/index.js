@@ -1,7 +1,10 @@
 const forge = require('node-tls');
 require('./node_modules/node-tls/lib/http.js');
 
-const subtls = require('subtls');
+// const subtls = require('subtls');
+chatty = false;
+let subtls = import('./subtls/dist/export.js');
+
 // console.log(subtls);
 
 const certs = require('./certs');
@@ -101,7 +104,7 @@ const fetch2 = async function (gurl, options) {
 
     console.log(forge.http.createRequest({ method: 'GET', path: url.pathname }).toString());
 
-    let closed = false;
+    let closed = { c: false };
     let responsebuffer = new Uint8Array(0);
     let responsepromiser;
     let responsepromise = new Promise((resolve, reject) => { responsepromiser = resolve; });
@@ -116,22 +119,26 @@ const fetch2 = async function (gurl, options) {
                 case "data":
                     // console.log(data.data);
                     dataness = new Uint8Array([...dataness, ...Uint8Array.from(atob(data.data), c => c.charCodeAt(0))]);
+
                     break;
-                case "close":
-                    console.log('[socket] disconnected');
-                    sb = true;
-                    closed = true;
-                    break;
+                // case "close":
+                //     console.log('[socket] disconnected');
+                //     // sb = true;
+                //     break;
             }
-            if (sb) break;
+            // if (sb) break;
         }
     })();
 
-    console.log({ index: certs.certindex, data: new Uint8Array(certs.certs) });
+    // console.log({ index: certs.certindex, data: new Uint8Array(certs.certs) });
 
+
+    subtls = await subtls;
+
+    let ddd = new Date();
     const [uread, uwrite] = await subtls.startTls(url.hostname, { index: certs.certindex, data: certs.certs }, async function (bytes) {
         let a = false;
-        while (!closed) {
+        while (!closed.c || responsebuffer.length > 0) {
             if (a) await new Promise(r => setTimeout(r, 10)); // jshint ignore:line
             a = true;
 
@@ -139,11 +146,16 @@ const fetch2 = async function (gurl, options) {
                 let data = dataness.slice(0, bytes);
                 dataness = dataness.slice(bytes);
                 return data;
+            } else {
+                if ((new Date() - ddd > 25000 || responsebuffer.length > 0) && bytes == 5) {
+                    return undefined;
+                }
             }
         }
         return undefined;
     }, async function (bytes) {
         // write
+        // console.log(bytes.toString());
         let response = await sendWs({
             action: "data",
             data: {
@@ -153,42 +165,44 @@ const fetch2 = async function (gurl, options) {
         });
 
         return;
-    });
+    }, closed);
 
-    // (async () => {
-    //     while (!closed) {
-    //         let data = await uread();
-    //         if (data === undefined) {
-    //             closed = true;
-    //             break;
-    //         } else {
-    //             responsebuffer = new Uint8Array([...responsebuffer, ...data]);
-    //         }
+    (async () => {
+        while (!closed.c) {
+            let data = await uread();
+            if (data === undefined) {
+                closed.c = true;
+                break;
+            } else {
+                responsebuffer = new Uint8Array([...responsebuffer, ...data]);
+            }
+        }
+        // close the connection server-side!!
+
+        responsepromiser(responsebuffer);
+    })();
+
+    let write = function (input) {
+        if (typeof input === "string") {
+            uwrite(Uint8Array.from(input, c => c.charCodeAt(0)));
+        } else if (input instanceof Uint8Array) {
+            uwrite(input);
+        }
+    };
+
+    write(rawHttpReq);
+
+    await responsepromise;
+    console.log("received response", responsebuffer, "\n", String.fromCharCode.apply(null, responsebuffer));
+
+
+    // let response = await sendWs({
+    //     action: "data",
+    //     data: {
+    //         id: conn.id,
+    //         data: forge.http.createRequest({ method: 'GET', path: url.pathname }).toString(),
     //     }
-    //     responsepromiser(responsebuffer);
-    // })();
-
-    // let write = function (input) {
-    //     if (typeof input === "string") {
-    //         uwrite(Uint8Array.from(input, c => c.charCodeAt(0)));
-    //     } else if (input instanceof Uint8Array) {
-    //         uwrite(input);
-    //     }
-    // };
-
-    // // write(rawHttpReq);
-
-    // await responsepromise;
-    // console.log("received response", responsebuffer, "\n", String.fromCharCode.apply(null, responsebuffer));
-
-
-    // // let response = await sendWs({
-    // //     action: "data",
-    // //     data: {
-    // //         id: conn.id,
-    // //         data: forge.http.createRequest({ method: 'GET', path: url.pathname }).toString(),
-    // //     }
-    // // });
+    // });
 };
 
 window.fetch2 = fetch2;
