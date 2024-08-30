@@ -10,7 +10,7 @@ const server = http.createServer((req, res) => {
             body += chunk.toString();
         });
         req.on('end', () => {
-            if (body === "secret") {
+            if (body === "secret" || body === "secret".repeat(1000)) {
                 res.writeHead(200);
                 res.end("thank you");
             } else {

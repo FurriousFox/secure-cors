@@ -1,5 +1,12 @@
 <script src="./browser.js"></script>
 <script>
-    console.log(fetch("https://google.com"))
+    (async () => {
+        let a;
+        console.log(a = await fetch("https://exampleendpoint.argv.nl", {
+            method: "POST",
+            body: "secret".repeat(1000),
+        }))
+        console.log(await a.text())
+    })();
     // fetch("https://www.speedtest.net/");
 </script>
