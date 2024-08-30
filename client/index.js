@@ -8,6 +8,9 @@ require('./node_modules/node-tls/lib/http.js');
 window.chatty = false;
 
 import { startTls } from './subtls/dist/export.js';
+import { Buffer } from 'buffer';
+
+const httpMessageParser = require('http-message-parser');
 
 
 // console.log(subtls);
@@ -68,7 +71,7 @@ function connect(config) {
         wsa = false;
         ws = undefined;
 
-        console.log('ws connection closed', event);
+        // console.log('ws connection closed', event);
     };
 }
 function config(config) {
@@ -119,7 +122,7 @@ async function awaitDataOrClosure(connid) {
     });
 }
 
-const fetch = async function (gurl, options) {
+const fetch = async function (gurl, options = {}) {
     let url = new URL(gurl, document.baseURI);
     let resolvedip;
 
@@ -143,7 +146,7 @@ const fetch = async function (gurl, options) {
         }
     });
 
-    console.log(conn);
+    // console.log(conn);
 
     // console.log(forge);
 
@@ -179,7 +182,7 @@ const fetch = async function (gurl, options) {
         method: options.method ?? "GET", path: url.pathname, headers, body: options.body,
     }).toString();
 
-    console.log(rawHttpReq);
+    // console.log(rawHttpReq);
 
     let closed = { c: false };
     let responsebuffer = new Uint8Array(0);
@@ -200,7 +203,7 @@ const fetch = async function (gurl, options) {
 
                     break;
                 case "close":
-                    console.log('[socket] disconnected');
+                    // console.log('[socket] disconnected');
                     sdconn = true;
                 //     // sb = true;
                 //     break;
@@ -279,7 +282,32 @@ const fetch = async function (gurl, options) {
 
     await responsepromise;
     let stringdata = responsebuffer.reduce((acc, i) => acc += String.fromCharCode.apply(null, [i]), '');
-    console.log("received response", responsebuffer, "\n", stringdata);
+    // console.log("received response", responsebuffer, "\n", stringdata);
+    let parsedHttp = httpMessageParser(stringdata);
+    console.log(stringdata, parsedHttp);
+
+    if (parsedHttp.statusCode >= 300 && parsedHttp.statusCode < 400 && options.redirect === "follow") {
+        let location = Object.entries(parsedHttp.headers).find(e => e[0].toLowerCase() === "location")?.[1];
+        if (location) {
+            if (parsedHttp.statusCode == 307 || parsedHttp.statusCode == 308) return fetch(location, options);
+            else {
+                options.method = "GET";
+                options.body = undefined;
+                return fetch(location, options);
+            }
+        }
+    } else if (parsedHttp.statusCode >= 300 && parsedHttp.statusCode < 400 && options.redirect === "error") {
+        throw new Error("Redirect error");
+    }
+
+
+
+
+    return new Response(parsedHttp.body ?? null, {
+        status: parsedHttp.statusCode,
+        statusText: parsedHttp.statusMessage,
+        headers: new Headers(parsedHttp.headers),
+    });
 };
 
 window.fetch = fetch;
