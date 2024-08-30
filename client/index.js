@@ -1,4 +1,5 @@
 const forge = require('node-tls');
+const origfetch = window.fetch;
 require('./node_modules/node-tls/lib/http.js');
 
 // const subtls = require('subtls');
@@ -19,6 +20,7 @@ const config = {
     host: 'localhost',
     port: 11711,
     secure: false,
+    doh: true, // dns over https
 };
 
 let search = [];
@@ -87,13 +89,25 @@ async function awaitDataOrClosure(connid) {
 
 const fetch = async function (gurl, options) {
     let url = new URL(gurl);
+    let resolvedip;
 
-    // optional: DoH, todo
+    if (!url.hostname.match(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/g) && config.doh) {
+        try {
+            let aresolvedip = ((await (await origfetch(`https://cloudflare-dns.com/dns-query?name=${url.hostname}&type=A`, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/dns-json",
+                }
+            })).json()).Answer[0] ?? []).filter(e => e.type == 1)[0].data;
+            resolvedip = aresolvedip;
+        } catch (e) { }
+    }
+
 
     let conn = await sendWs({
         action: "connect",
         data: {
-            destination: `${url.hostname}:${url.port.length > 0 ? url.port : (url.protocol === "https:" ? 443 : 80)}`,
+            destination: `${resolvedip ?? url.hostname}:${url.port.length > 0 ? url.port : (url.protocol === "https:" ? 443 : 80)}`,
         }
     });
 
