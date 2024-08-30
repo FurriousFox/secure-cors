@@ -3,8 +3,12 @@ const origfetch = window.fetch;
 require('./node_modules/node-tls/lib/http.js');
 
 // const subtls = require('subtls');
-chatty = false;
-let subtls = import('./subtls/dist/export.js');
+// let subtls = import('./subtls/dist/export.js');
+
+window.chatty = false;
+
+import { startTls } from './subtls/dist/export.js';
+
 
 // console.log(subtls);
 
@@ -155,10 +159,10 @@ const fetch = async function (gurl, options) {
     // console.log({ index: certs.certindex, data: new Uint8Array(certs.certs) });
 
 
-    subtls = await subtls;
+    // subtls = await subtls;
 
     let ddd = new Date();
-    const [uread, uwrite] = await subtls.startTls(url.hostname, { index: certs.certindex, data: certs.certs }, async function (bytes) {
+    const [uread, uwrite] = await startTls(url.hostname, { index: certs.certindex, data: certs.certs }, async function (bytes) {
         let a = false;
         while (!closed.c || responsebuffer.length > 0) {
             if (a) await new Promise(r => setTimeout(r, 10)); // jshint ignore:line
