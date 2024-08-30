@@ -103,6 +103,8 @@ const fetch2 = async function (gurl, options) {
     let rawHttpReq = forge.http.createRequest({
         method: 'GET', path: url.pathname, headers: {
             "Host": url.hostname,
+            "User-Agent": navigator.userAgent,
+            "Connection": "close",
         }
     }).toString();
 
@@ -114,6 +116,7 @@ const fetch2 = async function (gurl, options) {
     let responsepromise = new Promise((resolve, reject) => { responsepromiser = resolve; });
 
     let dataness = new Uint8Array(0);
+    let sdconn = false;
     (async () => {
         while (true) {
             let data = await awaitDataOrClosure(conn.id);
@@ -125,8 +128,9 @@ const fetch2 = async function (gurl, options) {
                     dataness = new Uint8Array([...dataness, ...Uint8Array.from(atob(data.data), c => c.charCodeAt(0))]);
 
                     break;
-                // case "close":
-                //     console.log('[socket] disconnected');
+                case "close":
+                    console.log('[socket] disconnected');
+                    sdconn = true;
                 //     // sb = true;
                 //     break;
             }
@@ -158,8 +162,6 @@ const fetch2 = async function (gurl, options) {
         }
         return undefined;
     }, async function (bytes) {
-        // write
-        // console.log(bytes.toString());
         let response = await sendWs({
             action: "data",
             data: {
