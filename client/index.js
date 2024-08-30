@@ -85,7 +85,7 @@ async function awaitDataOrClosure(connid) {
     });
 }
 
-const fetch2 = async function (gurl, options) {
+const fetch = async function (gurl, options) {
     let url = new URL(gurl);
 
     // optional: DoH, todo
@@ -207,7 +207,8 @@ const fetch2 = async function (gurl, options) {
     write(rawHttpReq);
 
     await responsepromise;
-    console.log("received response", responsebuffer, "\n", String.fromCharCode.apply(null, responsebuffer));
+    let stringdata = responsebuffer.reduce((acc, i) => acc += String.fromCharCode.apply(null, [i]), '');
+    console.log("received response", responsebuffer, "\n", stringdata);
 };
 
-window.fetch2 = fetch2;
+window.fetch = fetch;
