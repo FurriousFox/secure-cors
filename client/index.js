@@ -120,7 +120,7 @@ async function awaitDataOrClosure(connid) {
 }
 
 const fetch = async function (gurl, options) {
-    let url = new URL(gurl);
+    let url = new URL(gurl, document.baseURI);
     let resolvedip;
 
     if (!url.hostname.match(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/g) && conf.doh) {
@@ -146,12 +146,37 @@ const fetch = async function (gurl, options) {
     console.log(conn);
 
     // console.log(forge);
-    let rawHttpReq = forge.http.createRequest({
-        method: 'GET', path: url.pathname, headers: {
-            "Host": url.hostname,
-            "User-Agent": navigator.userAgent,
-            "Connection": "close",
+
+
+    // options: 
+    // body: string, arraybuffer, blob, DataView, File, FormData, TypedArray or URLSearchParams
+    // headers: Headers object, or an object literal
+    // method: string
+    // redirect: follow, error, manual
+
+
+    if (options.redirect === undefined) {
+        options.redirect = "follow";
+    }
+
+    let headers = {
+        "Host": url.hostname,
+        "User-Agent": navigator.userAgent,
+        "Connection": "close",
+    };
+    if (options.headers) {
+        if (options.headers instanceof Headers) {
+            options.headers.forEach((v, k) => headers[k] = v);
+        } else if (typeof options.headers === "object") {
+            Object.assign(headers, options.headers);
         }
+    }
+    if (options.body) {
+        options.body = new Uint8Array(await new Response(options.body).arrayBuffer()).reduce((acc, i) => acc += String.fromCharCode.apply(null, [i]), '');
+    }
+
+    let rawHttpReq = forge.http.createRequest({
+        method: options.method ?? "GET", path: url.pathname, headers, body: options.body,
     }).toString();
 
     console.log(rawHttpReq);
