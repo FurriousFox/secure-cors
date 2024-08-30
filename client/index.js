@@ -100,9 +100,13 @@ const fetch2 = async function (gurl, options) {
     console.log(conn);
 
     // console.log(forge);
-    let rawHttpReq = forge.http.createRequest({ method: 'GET', path: url.pathname }).toString();
+    let rawHttpReq = forge.http.createRequest({
+        method: 'GET', path: url.pathname, headers: {
+            "Host": url.hostname,
+        }
+    }).toString();
 
-    console.log(forge.http.createRequest({ method: 'GET', path: url.pathname }).toString());
+    console.log(rawHttpReq);
 
     let closed = { c: false };
     let responsebuffer = new Uint8Array(0);
