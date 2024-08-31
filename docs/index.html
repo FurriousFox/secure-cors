@@ -3,7 +3,13 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Secure CORS demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
 </head>
+<script>
+    window.sfetch = "anti-hook";
+</script>
 <script src="https://cdn.jsdelivr.net/gh/FurriousFox/secure-cors/client/browser.js"></script>
 
 <body>
@@ -26,7 +32,24 @@
     </style>
 
     <div id="demo">
-        <h1>Just fetch, but CORS, and secure</h1>
+        <h1>vanilla fetch</h1>
+        <pre><code class="language-html">&lt;script&gt;
+    console.log("Fetching https://exampleendpoint.argv.nl ...")
+
+    let response = await fetch("https://exampleendpoint.argv.nl", {
+        method: "POST",
+        body: "secret",
+        mode: "no-cors"
+    });
+
+    console.log("Status: ",         response.status);
+    console.log("Response body: ",  await response.text());
+&lt;/script&gt;</code></pre>
+        <h2>Output:</h2>
+        <pre><code class="language-js" id="outputv"></code></pre>
+        <br>
+        <h1>Secure CORS <span style="font-size: 50%;">(basically just fetch, but cors, and secure)</span>
+        </h1>
         <pre><code class="language-html">&lt;script src="https://cdn.jsdelivr.net/gh/FurriousFox/secure-cors/client/browser.js"&gt;&lt;/script&gt;
 
 &lt;script&gt;
@@ -60,18 +83,13 @@
     </div>
 </body>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
-
-
 <script>
     hljs.highlightAll();
 </script>
 
 <script>
     (async () => {
-        fetch.config({
+        sfetch.config({
             // the hostname or ip address running the secure-cors server
             host: "exampleendpoint-secure-cors-server.argv.nl", // default: "127.0.0.1"
 
@@ -90,7 +108,7 @@
         document.getElementById("output").dataset.highlighted = ""
         hljs.highlightAll();
 
-        let response = await fetch("https://exampleendpoint.argv.nl", {
+        let response = await sfetch("https://exampleendpoint.argv.nl", {
             method: "POST",
             body: "secret",
         });
@@ -103,6 +121,29 @@
             `\nStatus: <span style="color: #097969">${response.status}</span>`
         document.getElementById("output").innerHTML +=
             `\nResponse body: <span style="color: #00f">${responseBody}</span>`
+    })();
+
+
+    (async () => {
+        console.log("Fetching https://exampleendpoint.argv.nl")
+        document.getElementById("outputv").innerHTML = `Fetching https://exampleendpoint.argv.nl ...\n`
+        document.getElementById("outputv").dataset.highlighted = ""
+        hljs.highlightAll();
+
+        let response = await fetch("https://exampleendpoint.argv.nl", {
+            method: "POST",
+            body: "secret",
+            mode: "no-cors"
+        });
+
+        let responseBody = await response.text();
+        console.log("Status: ", response.status);
+        console.log("Response body: ", responseBody);
+
+        document.getElementById("outputv").innerHTML +=
+            `\nStatus: <span style="color: #097969">${response.status}</span>`
+        document.getElementById("outputv").innerHTML +=
+            `\nResponse body: <span style="color: #00f">'' (empty, because you aren't allowed to read responses to requests in 'no-cors' mode)</span>`
     })();
 </script>
 
