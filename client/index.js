@@ -343,3 +343,4 @@ function unhook() {
 if (window?.sfetch == undefined) window.fetch = fetch;
 window.sfetch = fetch;
 fetch.config = config;
+fetch.unhook = unhook;
