@@ -26,7 +26,7 @@
     </style>
 
     <div id="demo">
-        <h1>Fetching https://exampleendpoint.argv.nl with post body "secret"...</h1>
+        <h1>Just fetch, but CORS, and secure</h1>
         <pre><code class="language-html">&lt;script src="https://cdn.jsdelivr.net/gh/FurriousFox/secure-cors/client/browser.js"&gt;&lt;/script&gt;
 
 &lt;script&gt;
@@ -44,6 +44,8 @@
         doh: true,                                          // default: false
     });
 
+    console.log("Fetching https://exampleendpoint.argv.nl ...")
+
     let response = await fetch("https://exampleendpoint.argv.nl", {
         method: "POST",
         body: "secret",
@@ -60,18 +62,48 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/html.min.js"></script>
 
 
 <script>
-    document.getElementById("output").innerText = `Status: 200`
-    document.getElementById("output").innerHTML +=
-        `\nResponse body: <span style="color: #00f">{"status":"success","message":"Hello, world!"}</span>`
-
-
     hljs.highlightAll();
+</script>
+
+<script>
+    (async () => {
+        fetch.config({
+            // the hostname or ip address running the secure-cors server
+            host: "exampleendpoint-secure-cors-server.argv.nl", // default: "127.0.0.1"
+
+            // the port the secure-cors server is running on
+            port: 443, // default: 11711
+
+            // whether to use wss:// or ws://
+            secure: true, // default: false
+
+            // whether to use DNS-over-HTTPS to resolve the hostname
+            doh: true, // default: false
+        });
+
+        console.log("Fetching https://exampleendpoint.argv.nl")
+        document.getElementById("output").innerHTML = `Fetching https://exampleendpoint.argv.nl ...\n`
+        document.getElementById("output").dataset.highlighted = ""
+        hljs.highlightAll();
+
+        let response = await fetch("https://exampleendpoint.argv.nl", {
+            method: "POST",
+            body: "secret",
+        });
+
+        let responseBody = await response.text();
+        console.log("Status: ", response.status);
+        console.log("Response body: ", responseBody);
+
+        document.getElementById("output").innerHTML +=
+            `\nStatus: <span style="color: #097969">${response.status}</span>`
+        document.getElementById("output").innerHTML +=
+            `\nResponse body: <span style="color: #00f">${responseBody}</span>`
+    })();
 </script>
 
 </html>

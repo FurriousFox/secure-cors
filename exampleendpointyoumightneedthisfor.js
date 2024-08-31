@@ -10,9 +10,9 @@ const server = http.createServer((req, res) => {
             body += chunk.toString();
         });
         req.on('end', () => {
-            if (body === "secret" || body === "secret") {
+            if (body === "secret" || body === "secret".repeat(10000)) {
                 res.writeHead(200);
-                res.end("thank you");
+                res.end("correct secret");
             } else {
                 res.writeHead(403);
                 res.end("wrong secret");
