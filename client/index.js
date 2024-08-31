@@ -336,5 +336,10 @@ const fetch = function (gurl, options = {}, redirect = false) {
     });
 };
 
-window.fetch = fetch;
+function unhook() {
+    window.fetch = origfetch;
+}
+
+if (window?.sfetch == undefined) window.fetch = fetch;
+window.sfetch = fetch;
 fetch.config = config;
